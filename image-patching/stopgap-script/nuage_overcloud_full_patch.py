@@ -158,8 +158,12 @@ def add_files(image, version, workingDir):
             '"mkdir -p /etc/puppet/modules/nuage/manifests/13_files" -a %s --memsize %s --selinux-relabel' % (
             image, VIRT_CUSTOMIZE_MEMSIZE))
         virt_copy('%s %s/13_files/neutron_init.pp /etc/puppet/modules/nuage/manifests/13_files' % (image, workingDir))
+        virt_copy('%s %s/13_files/conductor.pp /etc/puppet/modules/nuage/manifests/13_files' % (image, workingDir))
         virt_customize(
             '"cp /etc/puppet/modules/nuage/manifests/13_files/neutron_init.pp /etc/puppet/modules/neutron/manifests/init.pp" -a %s --memsize %s --selinux-relabel' % (
+            image, VIRT_CUSTOMIZE_MEMSIZE))
+        virt_customize(
+            '"cp /etc/puppet/modules/nuage/manifests/13_files/conductor.pp /etc/puppet/modules/ironic/manifests/conductor.pp" -a %s --memsize %s --selinux-relabel' % (
             image, VIRT_CUSTOMIZE_MEMSIZE))
 
 
