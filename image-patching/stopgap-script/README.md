@@ -3,7 +3,8 @@ Steps:
 Clone this repo onto the machine that is accessible to the nuage-rpms repo and make sure the machine also has `libguestfs-tools` installed.   
 
 ```
-git clone https://github.com/nuagenetworks/nuage-ospdirector.git   
+git clone https://github.com/nuagenetworks/nuage-ospdirector.git  
+cd nuage-ospdirector/ 
 git checkout OSPD13   
 cd nuage-ospdirector/image-patching/stopgap-script/   
 ```
@@ -19,7 +20,7 @@ Now run the below command by providing required values
 This script takes in following input parameters:   
 RhelUserName: User name for the RHEL subscription   
 RhelPassword: Password for the RHEL subscription   
-RhelPool: RHEL Pool to subscribe to for base packages and instructions to get this can be found here in the 2nd point   
+RhelPool: RHEL Pool to subscribe to for base packages and instructions to get this can be found [here](https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/installing-the-undercloud#registering-and-updating-your-undercloud) in the 2nd point   
 RepoName: Name for the local repo hosting the Nuage RPMs   
 RepoBaseUrl: Base URL for the repo hosting the Nuage RPMs   
 ImageName: Name of the qcow2 image (overcloud-full.qcow2 for example)    
