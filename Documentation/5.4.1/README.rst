@@ -703,7 +703,51 @@ In OSPD 13 and later, /usr/share/openstack-tripleo-heat-templates/environments/n
         ...
 
 
-7. Please follow **Phase 6** steps again for verfication of all the nodes are assigned with correct flavors.
+7. **(Optional)** To enable Smart NIC Integration, perform the following instrctions:
+
+:Step 1: Create a new sriov-role.yaml file to deploy SR-IOV Compute nodes. The command used to create this file is:
+
+::
+
+    openstack overcloud roles generate Controller Compute ComputeSriov -o /home/stack/templates/sriov-role.yaml
+
+
+Create a flavor and profile for computesriov:
+
+      Please refer: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/chap-configuring_basic_overcloud_requirements_with_the_cli_tools#sect-Tagging_Nodes_into_Profiles for more information.
+
+::
+
+    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computesriov
+    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computesriov" computesriov
+
+
+
+:Step 2: Assign SR-IOV nodes with the appropriate computesriov profile:
+
+::
+
+    openstack baremetal node set --property capabilities='profile:computesriov,boot_option:local' <node-uuid>
+
+
+:Step 3: Add the count and flavor for ComputeSriov Role in the node-info.yaml file. The following example shows how to create a deployment with one Controller node, two Compute nodes, and two ComputeSriov nodes:
+
+::
+
+    OvercloudControllerFlavor: control
+    ControllerCount: 1
+    OvercloudComputeFlavor: compute
+    ComputeCount: 2
+    OvercloudComputeSriovFlavor: computesriov
+    ComputeAvrsCount: 2
+
+:Step 4: For "Deploy Overcloud", we need to pass /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml and /usr/share/openstack-tripleo-heat-templates/environments/ovs-hw-offload.yaml as environment files.
+
+
+:Step 5: There are no changes required for /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml. We need set some parameters in /usr/share/openstack-tripleo-heat-templates/environments/ovs-hw-offload.yaml and a sample file is provided in "Sample Templates" section.
+
+
+8. Please follow **Phase 6** steps again for verfication of all the nodes are assigned with correct flavors.
 
 
 
@@ -971,6 +1015,11 @@ For AVRS, also include following role and environment files.
 ::
 
     openstack overcloud deploy --templates -r /home/stack/templates/ironic-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic-inspector.yaml -e /home/stack/templates/ironic.yaml -e /home/stack/templates/ironic-inspector.yaml --ntp-server ntp-server
+
+
+7. For Smart NIC Integration with Nuage, use:
+
+::
 
 
 where:
@@ -1566,6 +1615,43 @@ ironic-inspector.yaml for Ironic-Inspector Deployment
       #NOTE: IronicInspectorIpRange will not be used but we have to set it to dummy IP range
       IronicInspectorIpRange: '10.0.0.3,10.0.0.30'
       IronicInspectorExtraProcessingHooks: extra_hardware,lldp_basic,local_link_connection,nuage_lldp
+
+
+ovs-hw-offload.yaml
+~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    # A Heat environment file that enables OVS Hardware Offload in the overcloud.
+    # This works by configuring SR-IOV NIC with switchdev and OVS Hardware Offload on
+    # compute nodes. The feature supported in OVS 2.8.0
+
+    resource_registry:
+      OS::TripleO::Services::NeutronSriovHostConfig: ../puppet/services/neutron-sriov-host-config.yaml
+
+    parameter_defaults:
+
+      NovaSchedulerDefaultFilters: ['RetryFilter','AvailabilityZoneFilter','RamFilter','ComputeFilter','ComputeCapabilitiesFilter','ImagePropertiesFilter','ServerGroupAntiAffinityFilter','ServerGroupAffinityFilter','PciPassthroughFilter']
+      NovaSchedulerAvailableFilters: ["nova.scheduler.filters.all_filters","nova.scheduler.filters.pci_passthrough_filter.PciPassthroughFilter"]
+
+      # Kernel arguments for ComputeSriov node
+      ComputeSriovParameters:
+        KernelArgs: "intel_iommu=on iommu=pt pci=realloc"
+        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in sriov-role.yaml.
+        # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
+        # If planning on setting IsolCpusList in your environment
+        #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or
+        #   2. You can pass you custom Tuned Profile to apply to the host
+        TunedProfileName: ""
+        OvsHwOffload: True
+        # Number of VFs that needs to be configured for a physical interface
+        NeutronSriovNumVFs: ["enp23s0f1:4:switchdev"]
+        # Mapping of SR-IOV PF interface to neutron physical_network.
+        # In case of Vxlan/GRE physical_network should be null.
+        # In case of flat/vlan the physical_network should as configured in neutron.
+        NovaPCIPassthrough:
+          - devname: "enp23s0f1"
+            physical_network: null
 
 
 docker-insecure-registry.yaml for One Local Registry
