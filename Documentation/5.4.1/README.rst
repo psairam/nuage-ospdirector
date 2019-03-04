@@ -20,6 +20,7 @@
 .. ..  10/23/18    5.3.3     Jennifer - DOC-2112
 .. ..  10/24/18    5.3.3     Jennifer - DOC-2105 - AVRS
 .. ..  01/22/19    5.4.1     DOC-2202 - Edit file in github
+.. ..  03/04/19    5.4.1     PROD-9386 - Adding Smart NIC Documentation
 
 
 ======================================================
@@ -1020,7 +1021,7 @@ For AVRS, also include following role and environment files.
 7. For Smart NIC Integration with Nuage, use:
 
 ::
-
+    openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server _ntp-server_
 
 where:
    * ``neutron-nuage-config.yaml`` is Controller specific parameter values.
@@ -1034,7 +1035,8 @@ where:
    * ``neutron-sriov.yaml`` Neutron SRIOV specific parameter values
    * ``avrs-role.yaml`` Enables services required for Compute Avrs role
    * ``ironic-role.yaml`` Enables Ironic Inspector service for Controller role
-
+   * ``ovs-hw-offload.yaml`` Enables OVS Hardware Offload on Smart NIC Compute nodes
+   * ``host-config-and-reboot.yaml`` Enables SRIOV and performs Reboot on Smart NIC Compute Nodes
 
 
 
@@ -1351,6 +1353,10 @@ The following parameter is used to enable/disable ipxe on th Controller:
 
     IronicInspectorIPXEEnabled
     Used to enable/disable ipxe
+
+
+Parameters Required for Smart NIC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Parameters Required for Docker
