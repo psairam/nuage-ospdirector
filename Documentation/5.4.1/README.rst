@@ -1358,6 +1358,29 @@ The following parameter is used to enable/disable ipxe on th Controller:
 Parameters Required for Smart NIC
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The following parameter is mapped to values in the /etc/default/grub file on the Smart NIC enabled Computes:
+
+::
+
+    KernelArgs
+    Maps to GRUB_CMDLINE_LINUX parameter. This is used to enable SRIOV feature in kernel.
+
+
+The following parameter is used for Tune-d profile activation on the Smart NIC enabled Computes:
+
+::
+
+    TunedProfileName
+    Tuned Profile to apply to the host
+
+
+The following parameter is mapped to config value required to enable OVS hardware offload on the Smart NIC enabled Computes:
+
+::
+
+    OvsHwOffload
+    Maps to OVS config value other_config:hw-offload.
+
 
 Parameters Required for Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
