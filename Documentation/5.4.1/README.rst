@@ -710,7 +710,7 @@ In OSPD 13 and later, /usr/share/openstack-tripleo-heat-templates/environments/n
 
 ::
 
-    openstack overcloud roles generate Controller Compute ComputeSriov -o /home/stack/templates/sriov-role.yaml
+    openstack overcloud roles generate Controller ComputeSriov -o /home/stack/templates/sriov-role.yaml
 
 
 Create a flavor and profile for computesriov:
@@ -737,8 +737,6 @@ Create a flavor and profile for computesriov:
 
     OvercloudControllerFlavor: control
     ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
     OvercloudComputeSriovFlavor: computesriov
     ComputeAvrsCount: 2
 
