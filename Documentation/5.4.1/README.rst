@@ -738,7 +738,7 @@ Create a flavor and profile for computesriov:
     OvercloudControllerFlavor: control
     ControllerCount: 1
     OvercloudComputeSriovFlavor: computesriov
-    ComputeAvrsCount: 2
+    ComputeSriovCount: 2
 
 :Step 4: For "Deploy Overcloud", we need to pass /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml and /usr/share/openstack-tripleo-heat-templates/environments/ovs-hw-offload.yaml as environment files.
 
@@ -1019,7 +1019,7 @@ For AVRS, also include following role and environment files.
 7. For Smart NIC Integration with Nuage, use:
 
 ::
-    openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server _ntp-server_
+    openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
 where:
    * ``neutron-nuage-config.yaml`` is Controller specific parameter values.
@@ -1035,6 +1035,7 @@ where:
    * ``ironic-role.yaml`` Enables Ironic Inspector service for Controller role
    * ``ovs-hw-offload.yaml`` Enables OVS Hardware Offload on Smart NIC Compute nodes
    * ``host-config-and-reboot.yaml`` Enables SRIOV and performs Reboot on Smart NIC Compute Nodes
+   * ``ntp-server`` The NTP for overcloud nodes.
 
 
 
@@ -1668,7 +1669,7 @@ ovs-hw-offload.yaml
         # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
         # If planning on setting IsolCpusList in your environment
         #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or
-        #   2. You can pass you custom Tuned Profile to apply to the host
+        #   2. You can pass your custom Tuned Profile to apply to the host
         TunedProfileName: ""
         OvsHwOffload: True
         # Number of VFs that needs to be configured for a physical interface
