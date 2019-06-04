@@ -1,0 +1,101 @@
+heat_template_version: queens
+description: 'Extra Post Deployment Config'
+parameters:
+  servers:
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  FastPathMask:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathNics:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  CorePortMapping:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathMemory:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  VmMemory:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  NbMbuf:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathOffload:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathNicDescriptors:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathOptions:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathDPVI:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+resources:
+
+  AvrsExtraConfigPost:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: FP_MASK
+        - name: FP_PORTS
+        - name: CORE_PORT_MAPPING
+        - name: FP_MEMORY
+        - name: VM_MEMORY
+        - name: NB_MBUF
+        - name: FP_OFFLOAD
+        - name: FPNSDK_OPTIONS
+        - name: DPVI_MASK
+        - name: FP_OPTIONS
+      config: {get_file: ./avrs-post.sh}
+
+
+  AvrsExtraDeploymentsPost:
+    type: OS::Heat::SoftwareDeployments
+    properties:
+      name: AvrsExtraDeploymentsPost
+      servers:  {get_param: servers}
+      config: {get_resource: AvrsExtraConfigPost}
+      actions: ['CREATE', 'UPDATE']
+      input_values:
+        FP_MASK: {get_param: [RoleParameters, FastPathMask]}
+        FP_PORTS: {get_param: [RoleParameters, FastPathNics]}
+        CORE_PORT_MAPPING: {get_param: [RoleParameters, CorePortMapping]}
+        FP_MEMORY: {get_param:  [RoleParameters, FastPathMemory]}
+        VM_MEMORY: {get_param: [RoleParameters, VmMemory]}
+        NB_MBUF: {get_param: [RoleParameters, NbMbuf]}
+        FP_OFFLOAD: {get_param: [RoleParameters, FastPathOffload]}
+        FPNSDK_OPTIONS: {get_param: [RoleParameters, FastPathNicDescriptors]}
+        DPVI_MASK: {get_param: [RoleParameters, FastPathDPVI]}
+        FP_OPTIONS: {get_param: [RoleParameters, FastPathOptions]}
