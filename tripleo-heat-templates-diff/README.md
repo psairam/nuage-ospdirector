@@ -9,10 +9,6 @@ git checkout OSPD13_VRS_offload
 cd tripleo-heat-templates-diff/
 ```
 
-<b>For Non AVRS integration,</b>
-
-Run either `sudo ./apply_patch.py` or `sudo python apply_patch.py` to patch the changes.   
-
 <b>For AVRS integration,</b>
 
 Run either `sudo ./apply_patch.py avrs` or  `sudo python apply_patch.py avrs` to patch the changes.

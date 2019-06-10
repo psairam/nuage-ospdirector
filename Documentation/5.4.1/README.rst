@@ -176,11 +176,11 @@ The integration includes the following steps:
         - virtual-accelerator-base
 
 
-* Updating the Undercloud codebase
+* Adding Nuage Heat Templates
 
-    - Apply the changes in the diff files in `tripleo-heat-templates-diff <../../tripleo-heat-templates-diff>`_ to the Undercloud codebase.
-    - The instructions to apply the patch script are in this README file: `README.md <../../tripleo-heat-templates-diff/README.md>`_.
-    - For AVRS integration, get the script and files to patch the Overcloud image with the AVRS RPMs.
+    - Nuage provides heat templates that are required to configure neutron on controller and nuage-openvswitch & nuage-metadata-agent on compute nodes.
+    - Nuage environemnt files can be used to provide the values required for configuring required files on controller and compute.
+
 
 * Updating the TripleO Heat templates (also referred to as the puppet manifests)
 
@@ -306,17 +306,23 @@ Phase 2: Modify the Overcloud qcow image (for example, overcloud-full.qcow2) to 
 The steps for modifying overcloud-full.qcow2 are provided in the `README.md <../../image-patching/stopgap-script/README.md>`_ file.
 
 
-Phase 3: Update the Undercloud codebase.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Phase 3: Adding Nuage Heat Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Follow the instructions in `README.md
-<../../tripleo-heat-templates-diff/README.md>`_  to apply the patch to the codebase.
+Copy the nuage-tripleo-heat-templates folder form `here <../../nuage-tripleo-heat-templates>`_ to /home/stack/ directory on undercloud.
+
+This particular folder contains all the required nuage-heat-templates along with nuage environment files.
+
+Users need to modify nuage environment files present in /home/stack/nuage-tripleo-heat-templates/environments/ to pass reuqired values for controller and compute.
 
 
 **For an AVRS integration please follow below steps as well**:
 
 
-1. Create an environment file called avrs-environment.yaml in usr/share/openstack-tripleo-heat-templates/environments/.
+1. Apply the changes in `tripleo-heat-templates-diff <../../tripleo-heat-templates-diff>`_ by following the instructions in this `README <../../tripleo-heat-templates-diff/README.md>`_.
+
+
+2. Create an environment file called avrs-environment.yaml in usr/share/openstack-tripleo-heat-templates/environments/.
 
 ::
 
@@ -332,7 +338,7 @@ Follow the instructions in `README.md
     FastPathOptions        =====>    FP_OPTIONS
 
 
-2. Use the ``create_compute_avrs_role.sh`` to create a roles file called ``avrs-role.yaml``. Copy the script from `here
+3. Use the ``create_compute_avrs_role.sh`` to create a roles file called ``avrs-role.yaml``. Copy the script from `here
 <../../avrs/create_compute_avrs_role.sh>`_  to ``/home/stack/templates/`` on Undercloud Node. Run using
 
 ::
@@ -388,9 +394,9 @@ Run the following commands.
 Phase 7: Create the Heat templates.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Go to /usr/share/openstack-tripleo-heat-templates/environments/ on the Undercloud machine.
+1. Go to /home/stack/nuage-tripleo-heat-templates/environments/ on the Undercloud machine.
 
-2. Create these templates, and add the values for the VSD IP, CMS ID, and other parameters in the following files. Go to the `Parameters in the Heat Templates`_ section for details about the parameters in the templates.
+2. Modify these templates, and add the values for the VSD IP, CMS ID, and other parameters in the following files. Go to the `Parameters in the Heat Templates`_ section for details about the parameters in the templates.
 
     * neutron-nuage-config.yaml - Add the generated ``cms_id`` to the ``NeutronNuageCMSId`` parameter.
     * nova-nuage-config.yaml
@@ -762,14 +768,14 @@ Create a flavor and profile for computesriov:
     ComputeSriovCount: 2
 
 
-:Step 4: As part of overcloud deployment, Mellanox firstboot template ``/home/stack/templates-original/mellanox_fw_update.yaml`` will be updating firmware on CX5 interface. Create FW folder that will contain all the Mellanox Firmware bin files on a machine that has httpd server running. (User can use the undercloud itself)
+:Step 4: As part of overcloud deployment, Mellanox firstboot template ``/home/stack/nuage-tripleo-heat-templates/firstboot/mellanox_fw_update.yaml`` will be updating firmware on CX5 interface. Create FW folder that will contain all the Mellanox Firmware bin files on a machine that has httpd server running. (User can use the undercloud itself)
 
 ::
 
     $ mkdir -p /var/www/html/FW_<VERSION>
 
 
-:Step 5: Download and place all the Mellanox Firmware bins to the folder created above and set ``BIN_DIR_URL`` in ``/home/stack/templates/mellanox-environment.yaml`` to the above URL. Sample is provided in `Sample Templates`_ section.
+:Step 5: Download and place all the Mellanox Firmware bins to the folder created above and set ``BIN_DIR_URL`` in ``/home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml`` to the above URL. Sample is provided in `Sample Templates`_ section.
 
 
 :Step 6: Edit network-environment.j2.yaml file in /usr/share/openstack-tripleo-heat-templates/environments/. See the sample for Offload VRS in the `Sample Templates`_ section.
@@ -852,10 +858,10 @@ Create a flavor and profile for computesriov:
 :Step 8: For "Deploy Overcloud", we need to pass ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`` as environment file.
 
 
-:Step 9: We also need to create ``/home/stack/templates/ovs-hw-offload.yaml`` and ``/home/stack/templates/mellanox-environment.yaml`` environment files.
+:Step 9: We also need to create ``/home/stack/templates/ovs-hw-offload.yaml`` and ``/home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml`` environment files.
 
 
-:Step 10: There are no changes required for ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml``. We need set some parameters in ``/home/stack/templates/ovs-hw-offload.yaml`` and ``/home/stack/templates/mellanox-environment.yaml``. A sample file is provided in `Sample Templates`_ section.
+:Step 10: There are no changes required for ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml``. We need set some parameters in ``/home/stack/templates/ovs-hw-offload.yaml`` and ``/home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml``. A sample file is provided in `Sample Templates`_ section.
 
 
 
@@ -1076,64 +1082,64 @@ For AVRS, also include following role and environment files.
 
 ::
 
-    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
     
     For a virtual deployment, add the --libvirt-type parameter:
-    openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
     
     For AVRS integration, use:
-    openstack overcloud deploy --templates -r /home/stack/templates/avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml  -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/avrs-environment.yaml
+    openstack overcloud deploy --templates -r /home/stack/templates/avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/avrs-environment.yaml
 
 
 2. For an HA deployment, use one of the following commands:
 
 ::
 
-    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
     
     For a virtual deployment, add the --libvirt-type parameter:
-    openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
     
     For AVRS integration, use:
-    openstack overcloud deploy --templates -r /home/stack/templates/avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml  -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/avrs-environment.yaml
+    openstack overcloud deploy --templates -r /home/stack/templates/avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/avrs-environment.yaml
 
 
 3. For SR-IOV, use following commands:
 
 ::
 
-   openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/neutron-sriov.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
+   openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/neutron-sriov.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
 
 
 4. For a Linux-bonding HA deployment with Nuage, use the following:
 
 ::
 
-    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
 
     For AVRS integration, use the following:
-    openstack overcloud deploy --templates -r /home/stack/templates/avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/avrs-environment.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/templates/avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/avrs-environment.yaml --ntp-server ntp-server
 
 
 5.  For Ironic Integration (without Ironic Inspector) with Nuage, use:
 
 ::
 
-    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services-docker/ironic.yaml -e /home/stack/templates/ironic.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services-docker/ironic.yaml -e /home/stack/templates/ironic.yaml --ntp-server ntp-server
 
 
 6. For Ironic Inspector Integration with Nuage, use:
 
 ::
 
-    openstack overcloud deploy --templates -r /home/stack/templates/ironic-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic-inspector.yaml -e /home/stack/templates/ironic.yaml -e /home/stack/templates/ironic-inspector.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/templates/ironic-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic-inspector.yaml -e /home/stack/templates/ironic.yaml -e /home/stack/templates/ironic-inspector.yaml --ntp-server ntp-server
 
 
 7. For VRS Offload to Mellanox CX-5 with Nuage, use:
 
 ::
 
-    openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/net-multiple-nics.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/templates/mellanox-environment.yaml -e /home/stack/templates/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/templates/sriov-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/net-multiple-nics.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/templates/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
 where:
    * ``neutron-nuage-config.yaml`` is Controller specific parameter values.
@@ -1438,9 +1444,6 @@ The following parameters are mapped to values in the /etc/ironic/ironic.conf on 
     IronicIPXEEnabled
     Maps to ipxe_enabled parameter.
 
-    IronicDhcpProvider
-    Maps to dhcp_provider parameter.
-
 
 Parameters Required for Ironic-Inspector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1668,7 +1671,7 @@ neutron-nuage-config.yaml
       OS::TripleO::Services::NeutronOvsAgent: OS::Heat::None
       OS::TripleO::Services::ComputeNeutronOvsAgent: OS::Heat::None
       # Override the NeutronCorePlugin to use Nuage
-      OS::TripleO::Docker::NeutronMl2PluginBase: OS::TripleO::Services::NeutronCorePluginML2Nuage
+      OS::TripleO::Docker::NeutronMl2PluginBase: ../puppet/services/neutron-plugin-ml2-nuage.yaml
 
     parameter_defaults:
       NeutronNuageNetPartitionName: 'Nuage_Partition_13'
@@ -1734,7 +1737,7 @@ nova-nuage-config.yaml For a Virtual Setup
     # A Heat environment file which can be used to enable
     # Nuage backend on the compute, configured via puppet
     resource_registry:
-      OS::TripleO::Services::ComputeNeutronCorePlugin: OS::TripleO::Services::ComputeNeutronCorePluginNuage
+      OS::TripleO::Services::ComputeNeutronCorePlugin: ../puppet/services/neutron-compute-plugin-nuage.yaml
 
     parameter_defaults:
       NuageActiveController: '192.168.24.119'
@@ -1755,7 +1758,7 @@ nova-nuage-config.yaml For a KVM Setup
     # A Heat environment file which can be used to enable
     # Nuage backend on the compute, configured via puppet
     resource_registry:
-      OS::TripleO::Services::ComputeNeutronCorePlugin: OS::TripleO::Services::ComputeNeutronCorePluginNuage
+      OS::TripleO::Services::ComputeNeutronCorePlugin: ../puppet/services/neutron-compute-plugin-nuage.yaml
 
     parameter_defaults:
       NuageActiveController: '192.168.24.119'
@@ -1815,7 +1818,10 @@ ironic.yaml for Ironic/Ironic-Inspector Deployment
 
       IronicCleaningDiskErase: metadata
       IronicIPXEEnabled: false
-      IronicDhcpProvider: 'neutron'
+      ControllerExtraConfig:
+        ironic::config::ironic_config:
+          dhcp/dhcp_provider:
+            value: neutron
 
 
 ironic-inspector.yaml for Ironic-Inspector Deployment
@@ -1868,7 +1874,7 @@ mellanox-environment.yaml
 ::
 
     resource_registry:
-      OS::TripleO::ComputeSriov::NodeUserData: ./mellanox_fw_update.yaml
+      OS::TripleO::ComputeSriov::NodeUserData: ../firstboot/mellanox_fw_update.yaml
 
     parameter_defaults:
       ################
@@ -1883,6 +1889,8 @@ mellanox-environment.yaml
       BIN_DIR_URL: "http://192.168.24.1/FW_16_25_0310/"
       NUM_OF_VFS: 64
       SRIOV_EN: True
+      ESWITCH_IPV4_TTL_MODIFY_ENABLE: True
+      PRIO_TAG_REQUIRED_EN: True
 
 
 docker-insecure-registry.yaml for One Local Registry

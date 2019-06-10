@@ -86,8 +86,6 @@ def main():
                 print "Please refer README.md"
                 sys.exit(1)
 
-    enable_features += constants.COMMON_PATCH
-
     version = subprocess.check_output(
         ['rpm', '-qa', 'openstack-tripleo-heat-templates']
     )
