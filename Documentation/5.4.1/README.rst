@@ -1438,9 +1438,6 @@ The following parameters are mapped to values in the /etc/ironic/ironic.conf on 
     IronicIPXEEnabled
     Maps to ipxe_enabled parameter.
 
-    IronicDhcpProvider
-    Maps to dhcp_provider parameter.
-
 
 Parameters Required for Ironic-Inspector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1815,7 +1812,10 @@ ironic.yaml for Ironic/Ironic-Inspector Deployment
 
       IronicCleaningDiskErase: metadata
       IronicIPXEEnabled: false
-      IronicDhcpProvider: 'neutron'
+      ControllerExtraConfig:
+        ironic::config::ironic_config:
+          dhcp/dhcp_provider:
+            value: neutron
 
 
 ironic-inspector.yaml for Ironic-Inspector Deployment
