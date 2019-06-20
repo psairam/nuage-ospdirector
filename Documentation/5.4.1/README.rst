@@ -385,55 +385,49 @@ Phase 7: Nuage Docker images.
     Password: ${REGISTRY-SERVICE-ACCOUNT-PASSWORD}
     Login Succeeded!
 
-2. Pull all the Nuage container images using following commands.
-   Supported <nuage-version> is 5.4.1u1 
-::
-
-    $ docker pull registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>
-    $ docker pull registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-heat-api-cfn-<nuage-version>
-    $ docker pull registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-heat-engine-<nuage-version>
-    $ docker pull registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-horizon-<nuage-version>
-    $ docker pull registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-neutron-server-<nuage-version>
-
-3. Re-tag the Nuage docker images to push them to local registry running on Undercloud.
-
-::
-    Note: In my case Undercloud IP is 192.168.24.1 and registry port is 8787
-    $ docker tag registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>:latest 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>:latest
-    $ docker tag registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-heat-api-cfn-<nuage-version>:latest 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-cfn-<nuage-version>:latest
-    $ docker tag registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-heat-engine-<nuage-version>:latest 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-engine-<nuage-version>:latest
-    $ docker tag registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-horizon-<nuage-version>:latest 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-horizon-<nuage-version>:latest
-    $ docker tag registry.connect.redhat.com/nuagenetworks/rhosp14-openstack-neutron-server-<nuage-version>:latest 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-neutron-server-<nuage-version>:latest
-
-
-4. Push the Nuage container images to the local registry.
+2. Now change the working directory to /home/stack/nuage-tripleo-heat-templates/scripts/pulling_nuage_containers/
 
 ::
 
-    docker push 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>:latest
-    docker push 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-cfn-<nuage-version>:latest
-    docker push 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-engine-<nuage-version>:latest
-    docker push 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-horizon-<nuage-version>:latest
-    docker push 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-neutron-server-<nuage-version>:latest
+    $ cd /home/stack/nuage-tripleo-heat-templates/scripts/pulling_nuage_containers/
 
-
-5. Create /home/stack/templates/overcloud_images.yaml file and below to point Heat, Horizon, Neutron, and their Docker configuration images to ones in the local registry:
+3. Configure nuage_config.yaml with appropriate values and a sample is given below.
 
 ::
 
-    parameter_defaults:
-      DockerHeatApiCfnConfigImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-cfn-<nuage-version>:latest
-      DockerHeatApiCfnImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-cfn-<nuage-version>:latest
-      DockerHeatApiConfigImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>:latest
-      DockerHeatApiImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>:latest
-      DockerHeatConfigImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-api-<nuage-version>:latest
-      DockerHeatEngineImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-heat-engine-<nuage-version>:latest
-      DockerHorizonConfigImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-horizon-<nuage-version>:latest
-      DockerHorizonImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-horizon-<nuage-version>:latest
-      DockerInsecureRegistryAddress:
-      - 192.168.24.1:8787
-      DockerNeutronApiImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-neutron-server-<nuage-version>:latest
-      DockerNeutronConfigImage: 192.168.24.1:8787/nuagenetworks/rhosp14-openstack-neutron-server-<nuage-version>:latest
+    #OpenStack version number
+    version: 14
+    #Nuage Release and format is <Major-release, use '-' instead of '.'>-<Minor-release>-<Updated-release>
+    release: 5-4-1-u4
+    #Tag for Nuage container images
+    tag: latest
+    #Undercloud Local Regstry IP Address
+    local_registry: 192.168.24.1:8787
+    #List of Nuage containers
+    nuage_images: ['heat-api-cfn', 'heat-api', 'heat-engine', 'horizon', 'neutron-server']
+
+4. Now execute `pull_nuage_containers.py` script by passing nuage_config.yaml to "--nuage-config" argument.
+
+::
+
+    $ python pull_nuage_containers.py --nuage-config nuage_config.yaml
+
+5. The above command does the below four steps:
+
+:Step1: Pull Nuage container images from Red Hat Registry
+
+:Step2: Retag the Nuage container images, by modifying the registry to point to local registry
+
+:Step3: Push the retagged Nuage container images to local registry
+
+:Step4: Remove the container images that got created in step1 and step2 from undercloud machine.
+
+6. After executing `pull_nuage_containers.py`, there will be a nuage_overcloud_images.yaml created under /home/stack/nuage-tripleo-heat-templates/environments and always /home/stack/templates/overcloud_images.yaml should take precedence over this file.
+
+::
+
+    Ex:
+    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml - e <remaining environment files>
 
 
 Phase 8: Deploy the Overcloud.
