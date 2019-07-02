@@ -16,8 +16,7 @@ parameter_defaults:
     FastPathOffload: "off"
 
   ComputeAvrsExtraConfig:
-    nova::config::nova_config:
-      monkey_patch:
-         value: true
-      monkey_patch_modules:
-         value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
+    DEFAULT/monkey_patch:
+      value: true
+    DEFAULT/monkey_patch_modules:
+      value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
