@@ -1,0 +1,9 @@
+---
+
+proxy_hostname: 
+proxy_port: 
+username: 
+password: 
+rhel_pool: 
+rpm_baseurl: 
+overcloud_image: 

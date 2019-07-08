@@ -1,0 +1,54 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: False
+
+  tasks:
+    - name: Subscribing to Red Hat
+      virt_customize_command:
+        image: "{{ overcloud_image }}"
+        shell:
+          - 'subscription-manager config --server.proxy_hostname={{ proxy_hostname }} --server.proxy_port={{ proxy_port }}'
+          - 'subscription-manager register --username={{ username }} --password={{ password }}'
+          - 'subscription-manager attach --pool={{ rhel_pool }}'
+          - 'subscription-manager repos --enable=rhel-7-server-optional-rpms  --enable=rhel-7-server-rpms'
+        selinux_relabel: true
+
+    - name: Uninstall Openvswitch
+      virt_customize_package:
+        image: "{{ overcloud_image }}"
+        name: openvswitch
+        state: absent
+        selinux_relabel: true
+
+    - name: Create Nuage repo
+      virt_customize_command:
+        image: "{{ overcloud_image }}"
+        shell:
+          - 'touch /etc/yum.repos.d/nuage.repo'
+          - 'echo "[Nuage]" >> /etc/yum.repos.d/nuage.repo'
+          - 'echo "name=nuage" >> /etc/yum.repos.d/nuage.repo'
+          - 'echo "baseurl={{ rpm_baseurl }}" >> /etc/yum.repos.d/nuage.repo'
+          - 'echo "enabled=1" >> /etc/yum.repos.d/nuage.repo'
+          - 'echo "gpgcheck=0" >> /etc/yum.repos.d/nuage.repo'
+        selinux_relabel: true
+        
+    - name: Install Nuage Packages
+      virt_customize_package:
+        image: "{{ overcloud_image }}"
+        name:
+          - perl-JSON
+          - libvirt
+          - lldpad
+          - nuage-openvswitch
+          - nuage-metadata-agent
+          - nuage-puppet-modules
+          - selinux-policy-nuage
+          - nuage-bgp
+        state: present
+        selinux_relabel: true
+
+    - name: Remove Subscription
+      virt_customize_command:
+        image: "{{ overcloud_image }}"
+        shell: 'subscription-manager unregister'
