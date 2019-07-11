@@ -4,15 +4,49 @@
   gather_facts: False
 
   tasks:
-    - name: Subscribing to Red Hat
+    - name: Configuring subscription-manager proxy
       virt_customize_command:
         image: "{{ overcloud_image }}"
         shell:
           - 'subscription-manager config --server.proxy_hostname={{ proxy_hostname }} --server.proxy_port={{ proxy_port }}'
-          - 'subscription-manager register --username={{ username }} --password={{ password }}'
+        selinux_relabel: true
+      when: proxy_hostname != '' and proxy_port != ''
+
+    - name: Subscribing to Red Hat
+      virt_customize_command:
+        image: "{{ overcloud_image }}"
+        shell:
+          - 'subscription-manager register --username={{ rhel_username }} --password={{ rhel_password }}'
           - 'subscription-manager attach --pool={{ rhel_pool }}'
           - 'subscription-manager repos --enable=rhel-7-server-optional-rpms  --enable=rhel-7-server-rpms'
         selinux_relabel: true
+      when: rhel_username != '' and  rhel_password != '' and rhel_pool != ''
+
+    - name: Adding GPG keys
+      block:
+      - name: Creating GPG key folder
+        virt_customize_command:
+         image: "{{ overcloud_image }}"
+         shell:
+            - 'mkdir -p /tmp/gpgkeys/'
+         selinux_relabel: true
+
+      - name: Copy GPG keys
+        virt_customize_upload:
+          image: "{{ overcloud_image }}"
+          src: "{{ item }}"
+          dest: /tmp/gpgkeys/
+          selinux_relabel: true
+        with_items:
+         - "{{ gpgkeys }}"
+
+      - name: Import all GPG keys
+        virt_customize_command:
+         image: "{{ overcloud_image }}"
+         shell:
+            - 'rpm --import /tmp/gpgkeys/*'
+         selinux_relabel: true
+      when: gpgkeys != []
 
     - name: Uninstall Openvswitch
       virt_customize_package:
@@ -21,34 +55,87 @@
         state: absent
         selinux_relabel: true
 
-    - name: Create Nuage repo
-      virt_customize_command:
+    - name: Copy custom repo file
+      virt_customize_upload:
         image: "{{ overcloud_image }}"
-        shell:
-          - 'touch /etc/yum.repos.d/nuage.repo'
-          - 'echo "[Nuage]" >> /etc/yum.repos.d/nuage.repo'
-          - 'echo "name=nuage" >> /etc/yum.repos.d/nuage.repo'
-          - 'echo "baseurl={{ rpm_baseurl }}" >> /etc/yum.repos.d/nuage.repo'
-          - 'echo "enabled=1" >> /etc/yum.repos.d/nuage.repo'
-          - 'echo "gpgcheck=0" >> /etc/yum.repos.d/nuage.repo'
+        src: "{{ repo_file }}"
+        dest: /etc/yum.repos.d/
         selinux_relabel: true
-        
+
+    - name: Downloading AVRS packages
+      block:
+        - name: Enabling AVRS repos
+          virt_customize_command:
+            image: "{{ overcloud_image }}"
+            shell:
+              - 'yum-config-manager --enable {{ item }}'
+            selinux_relabel: true
+          with_items:
+           - "{{ avrs_repos }}"
+        - name: Downloading AVRS packages
+          virt_customize_command:
+            image: "{{ overcloud_image }}"
+            shell:
+              - 'mkdir -p /6wind'
+              - 'rm -rf /var/cache/yum/Nuage'
+              - 'yum clean all'
+              - 'touch /kernel-version'
+              - 'rpm -q kernel | awk "{ print substr(\$1,8) }" > /kernel-version'
+              - 'yum install --setopt=skip_missing_names_on_install=False -y createrepo'
+              - 'yum install --setopt=skip_missing_names_on_install=False --downloadonly --downloaddir=/6wind kernel-headers-$(cat /kernel-version) kernel-devel-$(cat /kernel-version) kernel-debug-devel-$(cat /kernel-version) python-pyelftools* dkms* 6windgate* nuage-openvswitch nuage-metadata-agent virtual-accelerator*'
+              - 'yum install --setopt=skip_missing_names_on_install=False --downloadonly --downloaddir=/6wind selinux-policy-nuage-avrs*'
+              - 'yum install --setopt=skip_missing_names_on_install=False --downloadonly --downloaddir=/6wind 6wind-openstack-extensions'
+              - 'rm -rf /kernel-version'
+              - 'yum clean all'
+            selinux_relabel: true
+        - name: Disabling AVRS repos
+          virt_customize_command:
+            image: "{{ overcloud_image }}"
+            shell:
+              - 'yum-config-manager --disable {{ item }}'
+            selinux_relabel: true
+          with_items:
+           - "{{ avrs_repos }}"
+      when: avrs_repos != []
+
     - name: Install Nuage Packages
-      virt_customize_package:
-        image: "{{ overcloud_image }}"
-        name:
-          - perl-JSON
-          - libvirt
-          - lldpad
-          - nuage-openvswitch
-          - nuage-metadata-agent
-          - nuage-puppet-modules
-          - selinux-policy-nuage
-          - nuage-bgp
-        state: present
-        selinux_relabel: true
+      block:
+        - name: Enable VRS repos
+          virt_customize_command:
+            image: "{{ overcloud_image }}"
+            shell:
+              - 'yum-config-manager --enable {{ item }}'
+            selinux_relabel: true
+          with_items:
+           - "{{ vrs_repos }}"
+        - name: Installing Nuage packages
+          virt_customize_package:
+            image: "{{ overcloud_image }}"
+            name:
+              - perl-JSON
+              - libvirt
+              - lldpad
+              - nuage-openvswitch
+              - nuage-metadata-agent
+              - nuage-puppet-modules
+              - selinux-policy-nuage
+              - nuage-bgp
+              - nuage-openstack-neutronclient
+            state: present
+            selinux_relabel: true
+        - name: Disabling VRS repos
+          virt_customize_command:
+            image: "{{ overcloud_image }}"
+            shell:
+              - 'yum-config-manager --disable {{ item }}'
+            selinux_relabel: true
+          with_items:
+           - "{{ vrs_repos }}"
+      when: vrs_repos != []
 
     - name: Remove Subscription
       virt_customize_command:
         image: "{{ overcloud_image }}"
         shell: 'subscription-manager unregister'
+      when: rhel_username != '' and  rhel_password != '' and rhel_pool != ''
+

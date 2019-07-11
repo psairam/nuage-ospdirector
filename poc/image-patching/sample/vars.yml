@@ -1,9 +1,22 @@
 ---
 
-proxy_hostname: 
-proxy_port: 
-username: 
-password: 
-rhel_pool: 
-rpm_baseurl: 
-overcloud_image: 
+# Proxy Hostname
+proxy_hostname: ''
+# Proxy Port
+proxy_port: ''
+# Red Hat subscription username
+rhel_username: ''
+# Red Hat subscription password
+rhel_password: ''
+# Red Hat subscription pool id
+rhel_pool: ''
+# Absolute path to overcloud image
+overcloud_image: overcloud-full.qcow2
+# List of GPG key file location with absolute path
+gpgkeys: ['']
+# Repo file that has all repository information
+repo_file: nuage.repo
+# List of repository(s) need to enabled for Avrs packages
+avrs_repos: ['nuage_avrs']
+# List of repository(s) need to enabled for Vrs and Nuage Openstack packages
+vrs_repos: ['nuage_vrs', 'nuage_openstack']

@@ -1,0 +1,17 @@
+[nuage_openstack]
+name=nuage_openstack
+baseurl=http://135.227.146.166/5.4.1.U4/osc
+enabled=1
+gpgcheck=1
+
+[nuage_vrs]
+name=nuage_vrs
+baseurl=http://135.227.146.166/5.4.1.U4/vrs
+enabled=0
+gpgcheck=1
+
+[nuage_avrs]
+name=nuage_avrs
+baseurl=http://135.227.146.166/5.4.1.U4/avrs
+enabled=0
+gpgcheck=1
