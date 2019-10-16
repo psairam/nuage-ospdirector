@@ -5,10 +5,10 @@ parameter_defaults:
   NovaSchedulerDefaultFilters: ['RetryFilter','AvailabilityZoneFilter','RamFilter','ComputeFilter','ComputeCapabilitiesFilter','ImagePropertiesFilter','ServerGroupAntiAffinityFilter','ServerGroupAffinityFilter','PciPassthroughFilter']
   NovaSchedulerAvailableFilters: ["nova.scheduler.filters.all_filters","nova.scheduler.filters.pci_passthrough_filter.PciPassthroughFilter"]
 
-  # Kernel arguments for ComputeSriov node
-  ComputeSriovParameters:
+  # Kernel arguments for ComputeOvrs node
+  ComputeOvrsParameters:
     KernelArgs: "intel_iommu=on iommu=pt pci=realloc"
-    #NOTE: By default TunedProfileName is set to "cpu-partitioning" in sriov-role.yaml.
+    #NOTE: By default TunedProfileName is set to "cpu-partitioning" in ovrs-role.yaml.
     # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
     # If planning on setting IsolCpusList in your environment
     #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or

@@ -354,6 +354,17 @@ User can have Single or Mutli-Roles for AVRS nodes.
         ./create_compute_avrs_multirole.sh
 
 
+**For OVRS integration please follow below steps**:
+
+    Run `create_compute_ovrs <../../nuage-tripleo-heat-templates/scripts/create_roles/create_compute_avrs_role.sh>`_ to create ComputeOvrs role.
+
+    ::
+
+         cd /home/stack/nuage-tripleo-heat-templates/scripts/create_roles
+
+        ./create_compute_ovrs_role.sh
+
+    Above command will create a new ``ComputeOvrs`` role for your deployment
 
 
 Phase 5: Generate a CMS ID for the OpenStack installation.
@@ -568,23 +579,24 @@ This example shows how to create a deployment with one Controller node and two C
 
 5. To enable VRS Offload (OVRS) with Mellanox CX-5, perform the following instrctions:
 
-.. Note:: This feature uses same role as ComputeSriov and should not share the deployment with traditional SRIOV.
 
 :Step 1: Create a new ovrs-role.yaml file to deploy Offload VRS Compute nodes. The command used to create this file is:
 
 ::
 
-    openstack overcloud roles generate Controller ComputeSriov -o /home/stack/templates/ovrs-role.yaml
+    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/templates/ovrs-role.yaml Controller ComputeOvrs
+
+.. Note:: To deploy OVRS + VRS + AVRS computes in the same deployment, add "Compute" and "ComputeAvrs" roles to the above command at the end.
 
 
-Create a flavor and profile for computesriov:
+Create a flavor and profile for computeovrs:
 
       Please refer: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/chap-configuring_basic_overcloud_requirements_with_the_cli_tools#sect-Tagging_Nodes_into_Profiles for more information.
 
 ::
 
-    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computesriov
-    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computesriov" computesriov
+    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeovrs
+    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeovrs" computeovrs
 
 
 
@@ -593,7 +605,7 @@ Create a flavor and profile for computesriov:
 ::
 
     openstack baremetal node set --property capabilities='profile:control,boot_option:local' <node-uuid>
-    openstack baremetal node set --property capabilities='profile:computesriov,boot_option:local' <node-uuid>
+    openstack baremetal node set --property capabilities='profile:computeovrs,boot_option:local' <node-uuid>
 
 
 :Step 3: Add the count and flavor for ComputeSriov Role in the ``node-info.yaml`` file. The following example shows how to create a deployment with one Controller node and two Offload VRS Compute nodes:
@@ -603,8 +615,8 @@ Create a flavor and profile for computesriov:
     parameter_defaults:
       OvercloudControllerFlavor: control
       ControllerCount: 1
-      OvercloudComputeSriovFlavor: computesriov
-      ComputeSriovCount: 2
+      OvercloudComputeOvrsFlavor: computeovrs
+      ComputeOvrsCount: 2
 
 
 :Step 4: As part of overcloud deployment, Mellanox firstboot template ``/home/stack/nuage-tripleo-heat-templates/firstboot/mellanox_fw_update.yaml`` will be updating firmware on CX5 interface. Create FW folder that will contain all the Mellanox Firmware bin files on a machine that has httpd server running. (User can use the undercloud itself)
@@ -833,12 +845,12 @@ Create a flavor and profile for computesriov:
 :Step 1: Nuage uses the default Linux bridge and Linux bonds.
 
 
-:Step 2: Nuage provides `bond-with-vlans-hw-offload network templates <../../nuage-tripleo-heat-templates/network/config/bond-with-vlans-hw-offload/>`_ for deploying overcloud controller and computesriov by configuring linux bond with vlans.
+:Step 2: Nuage provides `bond-with-vlans network templates <../../nuage-tripleo-heat-templates/network/config/bond-with-vlans/>`_ for deploying overcloud controller and computesriov by configuring linux bond with vlans.
 
 
 :Step 3: The network template provided by Nuage by default supports the below topology and users can modify these network template to match their topology.
 
-    * computesriov.yaml expect computesriov nodes to have 5 interfaces, 1st interface for provisioning, 2 & 3 interfaces for linux bond with vlan for all networks except Tenant and 4 &5 for CX-5 NICs Hardware offload to configure linux bond with vlan for Tenant network.
+    * computeovrs.yaml expect computesriov nodes to have 5 interfaces, 1st interface for provisioning, 2 & 3 interfaces for linux bond with vlan for all networks except Tenant and 4 &5 for CX-5 NICs Hardware offload to configure linux bond with vlan for Tenant network.
 
 
 :Step 4: Here are sample network template changes for linux bond with vlans for CX-5 Hardware Offload NICs
@@ -1022,7 +1034,7 @@ For AVRS, also include following role and environment files.
     openstack overcloud deploy --templates -r /home/stack/templates/ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-single-nic-hw-offload.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
     For VF lag with VLANs for CX-5 NICs
-    openstack overcloud deploy --templates -r /home/stack/templates/ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans-hw-offload.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/templates/ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
 
 4. For SR-IOV, use following commands:
@@ -1051,7 +1063,6 @@ where:
    * ``network-environment.yaml`` Configures additional network environment variables
    * ``network-isolation.yaml`` Enables creation of networks for isolated overcloud traffic
    * ``net-single-nic-hw-offload.yaml``  Configures an IP address with vlan on each network except for tenant
-   * ``net-bond-with-vlans-hw-offload.yaml``  Configures an IP address and a pair of bonded nics on each network
    * ``net-bond-with-vlans.yaml`` Configures an IP address and a pair of bonded nics on each network
    * ``compute-sriov-role.yaml`` Enables services required for Compute Sriov role
    * ``neutron-sriov.yaml`` Neutron SRIOV specific parameter values
@@ -1671,10 +1682,10 @@ ovs-hw-offload.yaml for single CX-5 hardware offload NICs
       NovaSchedulerDefaultFilters: ['RetryFilter','AvailabilityZoneFilter','RamFilter','ComputeFilter','ComputeCapabilitiesFilter','ImagePropertiesFilter','ServerGroupAntiAffinityFilter','ServerGroupAffinityFilter','PciPassthroughFilter']
       NovaSchedulerAvailableFilters: ["nova.scheduler.filters.all_filters","nova.scheduler.filters.pci_passthrough_filter.PciPassthroughFilter"]
 
-      # Kernel arguments for ComputeSriov node
-      ComputeSriovParameters:
+      # Kernel arguments for ComputeOvrs node
+      ComputeOvrsParameters:
         KernelArgs: "intel_iommu=on iommu=pt pci=realloc"
-        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in sriov-role.yaml.
+        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in ovrs-role.yaml.
         # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
         # If planning on setting IsolCpusList in your environment
         #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or
@@ -1701,10 +1712,10 @@ ovs-hw-offload.yaml for VF-lag over CX-5 hardware offload NICs
       NovaSchedulerDefaultFilters: ['RetryFilter','AvailabilityZoneFilter','RamFilter','ComputeFilter','ComputeCapabilitiesFilter','ImagePropertiesFilter','ServerGroupAntiAffinityFilter','ServerGroupAffinityFilter','PciPassthroughFilter']
       NovaSchedulerAvailableFilters: ["nova.scheduler.filters.all_filters","nova.scheduler.filters.pci_passthrough_filter.PciPassthroughFilter"]
 
-      # Kernel arguments for ComputeSriov node
-      ComputeSriovParameters:
+      # Kernel arguments for ComputeOvrs node
+      ComputeOvrsParameters:
         KernelArgs: "intel_iommu=on iommu=pt pci=realloc"
-        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in sriov-role.yaml.
+        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in ovrs-role.yaml.
         # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
         # If planning on setting IsolCpusList in your environment
         #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or
@@ -1727,7 +1738,7 @@ mellanox-environment.yaml for single CX-5 hardware offload NICs
 ::
 
     resource_registry:
-      OS::TripleO::ComputeSriov::NodeUserData: ../firstboot/mellanox_fw_update.yaml
+      OS::TripleO::ComputeOvrs::NodeUserData: ../firstboot/mellanox_fw_update.yaml
 
     parameter_defaults:
       ################
@@ -1752,7 +1763,7 @@ mellanox-environment.yaml for VF-lag over CX-5 hardware offload NICs
 ::
 
     resource_registry:
-      OS::TripleO::ComputeSriov::NodeUserData: ../firstboot/mellanox_fw_update.yaml
+      OS::TripleO::ComputeOvrs::NodeUserData: ../firstboot/mellanox_fw_update.yaml
 
     parameter_defaults:
       ################
@@ -1804,12 +1815,12 @@ node-info.yaml for Offload VRS Deployments
     parameter_defaults:
       # OvercloudControllerFlavor is the flavor to use for Controller nodes
       OvercloudControllerFlavor: control
-      # OvercloudComputeSriovFlavor is the flavor to use for Offload VRS Compute nodes
-      OvercloudComputeSriovFlavor: computesriov
+      # OvercloudComputeOvrsFlavor is the flavor to use for Offload VRS Compute nodes
+      OvercloudComputeOvrsFlavor: computesriov
       # ControllerCount is number of Controller nodes
       ControllerCount: 1
-      # ComputeSriovCount is number of Offload VRS Compute nodes
-      ComputeSriovCount: 2
+      # ComputeOvrsCount is number of Offload VRS Compute nodes
+      ComputeOvrsCount: 2
 
 
 node-info.yaml for SR-IOV Deployments
