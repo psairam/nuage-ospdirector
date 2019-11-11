@@ -934,7 +934,7 @@ Phase 8. Nuage Docker Containers.
     #OpenStack version number
     version: 13
     #Nuage Release and format is <Major-release, use '-' instead of '.'>-<Minor-release>-<Updated-release>
-    # for exmaple: Nuage release 5.4.1u4 please enter following
+    # for exmaple: Nuage release 5.4.1u4 please enter 5.4.1u4 as 5-4-1-u4
     release: 5-4-1-u4
     #Tag for Nuage container images
     tag: latest
@@ -1055,6 +1055,13 @@ For AVRS, also include following role and environment files.
 
     For AVRS multi-role, use:
     openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+
+6. For all roles deployment with Nuage, use the following:
+
+::
+
+     openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/neutron-sriov.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server 135.1.1.111 --timeout timeout
+
 
 where:
    * ``neutron-nuage-config.yaml`` is Controller specific parameter values.
@@ -1540,6 +1547,15 @@ Include this file in the ``openstack overcloud deploy`` command when you deploy 
 
       # Number of VFs that needs to be configured for a physical interface
       NeutronSriovNumVFs: "eno2:5,eno3:7"
+      ComputeSriovParameters:
+	KernelArgs: "iommu=pt intel_iommu=on"
+	TunedProfileName: ""
+	NovaPCIPassthrough:
+	  - devname: "eno2"
+	    physical_network: "physnet1"
+	  - devname: "eno3"
+	    physical_network: "physnet2"
+
 
 
 nova-nuage-config.yaml For a Virtual Setup
