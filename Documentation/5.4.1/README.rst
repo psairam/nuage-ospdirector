@@ -580,11 +580,11 @@ This example shows how to create a deployment with one Controller node and two C
 5. To enable VRS Offload (OVRS) with Mellanox CX-5, perform the following instrctions:
 
 
-:Step 1: Create a new ovrs-role.yaml file to deploy Offload VRS Compute nodes. The command used to create this file is:
+:Step 1: Create a new compute-ovrs-role.yaml file to deploy Offload VRS Compute nodes. The command used to create this file is:
 
 ::
 
-    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/templates/ovrs-role.yaml Controller ComputeOvrs
+    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/templates/compute-ovrs-role.yaml Controller ComputeOvrs
 
 .. Note:: To deploy OVRS + VRS + AVRS computes in the same deployment, add "Compute" and "ComputeAvrs" roles to the above command at the end.
 
@@ -934,7 +934,7 @@ Phase 8. Nuage Docker Containers.
     #OpenStack version number
     version: 13
     #Nuage Release and format is <Major-release, use '-' instead of '.'>-<Minor-release>-<Updated-release>
-    # for exmaple: Nuage release 5.4.1u4 please enter 5.4.1u4 as 5-4-1-u4
+    # for example: For Nuage release 5.4.1u4 please enter 5-4-1-u4
     release: 5-4-1-u4
     #Tag for Nuage container images
     tag: latest
@@ -1031,10 +1031,10 @@ For AVRS, also include following role and environment files.
 ::
 
     For Single NIC CX-5 Hardware Offload:
-    openstack overcloud deploy --templates -r /home/stack/templates/ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-single-nic-hw-offload.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/templates/compute-ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-single-nic-hw-offload.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
     For VF lag with VLANs for CX-5 NICs
-    openstack overcloud deploy --templates -r /home/stack/templates/ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/templates/compute-ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
 
 4. For SR-IOV, use following commands:
@@ -1076,7 +1076,7 @@ where:
    * ``compute-avrs-role.yaml`` Enables services required for Compute Avrs role
    * ``compute-avrs-environment.yaml``  Configure the parameters for ComputeAvrs
    * ``compute-avrs-multirole-environment.yaml``  Configure the parameters for ComputeAvrsSingle & ComputeAvrsDual
-   * ``ovrs-role.yaml`` Enables services required for Compute Sriov role
+   * ``compute-ovrs-role.yaml`` Enables services required for Compute Sriov role
    * ``ovs-hw-offload.yaml`` Enables OVS Hardware Offload on VRS Offload Compute nodes
    * ``host-config-and-reboot.yaml`` Enables SRIOV and performs Reboot on VRS Offload Compute Nodes
    * ``mellanox-environment.yaml`` Mellanox First Boot Firmware Config
@@ -1701,7 +1701,7 @@ ovs-hw-offload.yaml for single CX-5 hardware offload NICs
       # Kernel arguments for ComputeOvrs node
       ComputeOvrsParameters:
         KernelArgs: "intel_iommu=on iommu=pt pci=realloc"
-        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in ovrs-role.yaml.
+        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in compute-ovrs-role.yaml.
         # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
         # If planning on setting IsolCpusList in your environment
         #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or
@@ -1731,7 +1731,7 @@ ovs-hw-offload.yaml for VF-lag over CX-5 hardware offload NICs
       # Kernel arguments for ComputeOvrs node
       ComputeOvrsParameters:
         KernelArgs: "intel_iommu=on iommu=pt pci=realloc"
-        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in ovrs-role.yaml.
+        #NOTE: By default TunedProfileName is set to "cpu-partitioning" in compute-ovrs-role.yaml.
         # If IsolCpusList is not set in your environment, then leave TunedProfileName below to set to empty string.
         # If planning on setting IsolCpusList in your environment
         #   1. You can comment the below line to set TunedProfileName to "cpu-partitioning" or
