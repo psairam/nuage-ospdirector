@@ -1,5 +1,5 @@
 resource_registry:
-  OS::TripleO::ComputeSriov::NodeUserData: ../firstboot/mellanox_fw_update.yaml
+  OS::TripleO::ComputeOvrs::NodeUserData: ../firstboot/mellanox_fw_update.yaml
 
 parameter_defaults:
   ################
