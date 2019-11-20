@@ -608,7 +608,7 @@ Create a flavor and profile for computeovrs:
     openstack baremetal node set --property capabilities='profile:computeovrs,boot_option:local' <node-uuid>
 
 
-:Step 3: Add the count and flavor for ComputeSriov Role in the ``node-info.yaml`` file. The following example shows how to create a deployment with one Controller node and two Offload VRS Compute nodes:
+:Step 3: Add the count and flavor for ComputeOvrs Role in the ``node-info.yaml`` file. The following example shows how to create a deployment with one Controller node and two Offload VRS Compute nodes:
 
 ::
 
@@ -629,7 +629,7 @@ Create a flavor and profile for computeovrs:
 :Step 5: Download and place all the Mellanox Firmware bins to the folder created above and set ``BIN_DIR_URL`` in ``/home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml`` to the above URL. Sample is provided in `Sample Templates`_ section.
 
 
-:Step 6: For "Deploy Overcloud", we need to pass ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`` as environment file to configure kernel arguments in `/etc/default/grub` and reboot the computesriov nodes.
+:Step 6: For "Deploy Overcloud", we need to pass ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`` as environment file to configure kernel arguments in `/etc/default/grub` and reboot the computeovrs nodes.
 
 
 
@@ -1076,7 +1076,7 @@ where:
    * ``compute-avrs-role.yaml`` Enables services required for Compute Avrs role
    * ``compute-avrs-environment.yaml``  Configure the parameters for ComputeAvrs
    * ``compute-avrs-multirole-environment.yaml``  Configure the parameters for ComputeAvrsSingle & ComputeAvrsDual
-   * ``compute-ovrs-role.yaml`` Enables services required for Compute Sriov role
+   * ``compute-ovrs-role.yaml`` Enables services required for Compute Ovrs role
    * ``ovs-hw-offload.yaml`` Enables OVS Hardware Offload on VRS Offload Compute nodes
    * ``host-config-and-reboot.yaml`` Enables SRIOV and performs Reboot on VRS Offload Compute Nodes
    * ``mellanox-environment.yaml`` Mellanox First Boot Firmware Config
@@ -1832,7 +1832,7 @@ node-info.yaml for Offload VRS Deployments
       # OvercloudControllerFlavor is the flavor to use for Controller nodes
       OvercloudControllerFlavor: control
       # OvercloudComputeOvrsFlavor is the flavor to use for Offload VRS Compute nodes
-      OvercloudComputeOvrsFlavor: computesriov
+      OvercloudComputeOvrsFlavor: computeovrs
       # ControllerCount is number of Controller nodes
       ControllerCount: 1
       # ComputeOvrsCount is number of Offload VRS Compute nodes
