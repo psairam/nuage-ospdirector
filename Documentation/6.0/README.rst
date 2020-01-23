@@ -49,7 +49,6 @@ VSP requirements:
 
    * VSD and VSC are set up before running OpenStack Platform director.
    * Your network includes redundant VSDs.
-   * Manual Horizon and Heat integration for Nuage Extensions are required because these modules are not part of the packaged integration.
 
 
 RHEL 7.7 is supported with OSP 13.
@@ -288,8 +287,8 @@ The steps for modifying overcloud-full.qcow2 are provided in the `README.md <../
 
 
 
-Phase 4: Adding Nuage Heat Templates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Phase 4: Adding Nuage Heat Templates and Roles
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Copy the nuage-tripleo-heat-templates folder from /home/stack/nuage-ospdirector-osp-13.<release>/nuage-tripleo-heat-templates to `/home/stack/` directory on undercloud.
 
@@ -306,42 +305,13 @@ Copy the roles from `/usr/share/openstack-tripleo-heat-templates/roles` to `/hom
         cp /usr/share/openstack-tripleo-heat-templates/roles/* /home/stack/nuage-tripleo-heat-templates/roles/
 
 
-**For AVRS integration, perform the following steps**:
 
-User can have Single or Mutli-Roles for AVRS nodes.
-
-    **For a single-role AVRS deployment**, use the `create_compute_avrs_role.sh <../../nuage-tripleo-heat-templates/scripts/create_roles/create_compute_avrs_role.sh>`_ to create a role file called ``compute-avrs-role.yaml``.
-
-    Run using
+Create ComputeAvrs, ComputeOvrs, ComputeAvrsSingle and ComputeAvrsDual Nuage Compute roles, by following below commands
 
     ::
-
-         cd /home/stack/nuage-tripleo-heat-templates/scripts/create_roles
-
-        ./create_compute_avrs_role.sh
-
-
-    Above command will create a new ``ComputeAvrs``  role for your deployment, and compare it with the sample `compute-avrs-role-sample.yaml <../../nuage-tripleo-heat-templates/templates/compute-avrs-role-sample.yaml>`_ .
-
-     **For a mutli-role AVRS deployment**, we have automated `script <../../nuage-tripleo-heat-templates/scripts/create_roles/create_compute_avrs_multirole.sh>`_ to create ComputeAvrsSingle and ComputeAvrsDual role. You can edit these files with your requirements to create new roles.
-    For more information about using roles refer to https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html-single/director_installation_and_usage/index#sect-Generate_Architecture_Specific_Roles
-
-    ::
-
         cd /home/stack/nuage-tripleo-heat-templates/scripts/create_roles
-        ./create_compute_avrs_multirole.sh
 
-**For OVRS integration please follow below steps**:
-
-    Run `create_compute_ovrs <../../nuage-tripleo-heat-templates/scripts/create_roles/create_compute_avrs_role.sh>`_ to create ComputeOvrs role.
-
-    ::
-
-         cd /home/stack/nuage-tripleo-heat-templates/scripts/create_roles
-
-        ./create_compute_ovrs_role.sh
-
-    Above command will create a new ``ComputeOvrs`` role for your deployment
+        ./create_all_roles.sh
 
 
 Phase 5: Generate a CMS ID for the OpenStack installation
@@ -385,9 +355,12 @@ Phase 7: Create the Heat Templates
     * neutron-nuage-config.yaml - Add the generated ``cms_id`` to the ``NeutronNuageCMSId`` parameter.
     * nova-nuage-config.yaml
 
-3. Create the environment file ``node-info.yaml`` under ``/home/stack/templates/`` to specify the count and flavor for ``Controller`` and ``Compute`` roles.
+VRS
++++
 
-Assign Controller and Compute nodes with their respective profiles:
+1. Create the environment file ``node-info.yaml`` under ``/home/stack/templates/`` to specify the count and flavor for ``Controller`` and ``Compute`` roles.
+
+2. Assign Controller and Compute nodes with their respective profiles:
 
 ::
 
@@ -395,122 +368,28 @@ Assign Controller and Compute nodes with their respective profiles:
     openstack baremetal node set --property capabilities='profile:compute,boot_option:local' <node-uuid>
 
 
-The syntax for ``node-info.yaml`` is:
 
-::
+Single Role AVRS (ComputeAvrs)
+++++++++++++++++++++++++++++++
 
-    parameter_defaults:
-      Overcloud<Role Name from the roles file>Flavor: <flavor name>
-      <Role Name from the roles file>Count: <number of nodes for this role>
+For ComputeAvrs Integration, perform the following instructions:
 
-
-
-This example shows how to create a deployment with one Controller node and two Compute nodes.
-
-::
-
-    parameter_defaults:
-      OvercloudControllerFlavor: control
-      ControllerCount: 1
-      OvercloudComputeFlavor: compute
-      ComputeCount: 2
-
-
-
-4. For AVRS Integration, perform the following instructions:
-
-:Step 1: Create a new compute-avrs-role.yaml file to deploy AVRS Compute nodes. The command used to create this file is:
-
-**For single-role AVRS deployment,**: `ComputeAvrs`
-
-::
-
-    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml Controller ComputeAvrs
-
-.. Note:: To include additional compute roles like VRS and SR-IOV please include "Compute" and "ComputeSriov" role names respectively at the end of the above command. Instructions for "ComputeSriov" role are available at "To enable SR-IOV" point 6 from this document.
-
-
-**For multi-role AVRS deployment,**: `ComputeAvrsSingle` and `ComputeAvrsDual`
-
-::
-
-    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml Controller Compute ComputeAvrsSingle ComputeAvrsDual
-
-.. Note:: given ``compute-avrs-role.yaml`` file can get updated with newer release
-
-
-:Step 2: Create a flavor and profile:
-
-**For single-role AVRS deployment,**: `computeavrs`
+:Step 1: Create a flavor and profile:
 
 ::
 
     openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeavrs
     openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrs" computeavrs
 
-**For multi-role AVRS deployment,**: `computeavrssingle` and `computeavrsdual`
 
-::
-
-    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeavrssingle
-    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrssingle" computeavrssingle
-
-    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeavrsdual
-    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrsdual" computeavrsdual
-
-
-:Step 3: Set profile to AVRS nodes:
-
-**For single-role AVRS deployment,:**
+:Step 2: Set profile to AVRS nodes:
 
 ::
 
     openstack baremetal node set --property capabilities='profile:computeavrs,boot_option:local' <node-uuid>
 
-**For multi-role AVRS deployment,:**
 
-::
-
-    openstack baremetal node set --property capabilities='profile:computeavrssingle,boot_option:local' <node-uuid>
-    openstack baremetal node set --property capabilities='profile:computeavrsdual,boot_option:local' <node-uuid>
-
-
-
-:Step 4: Create `node-info.yaml` with correct Node information.
-
-**For single-role AVRS deployment,** add the count and flavor for ComputeAvrs Role in the `node-info.yaml` file. The following example shows how to create a deployment with one Controller node, two Compute nodes, and two ComputeAvrs nodes:
-
-::
-
-    parameter_defaults:
-      OvercloudControllerFlavor: control
-      ControllerCount: 1
-      OvercloudComputeFlavor: compute
-      ComputeCount: 2
-      OvercloudComputeAvrsFlavor: computeavrs
-      ComputeAvrsCount: 2
-
-**For multi-role AVRS deployment,** set the `node-info.yaml` with the corresponding role name. The following example shows how to create a deployment with one Controller node, two Compute nodes,  two ComputeAvrsSingle and two ComputeAvrsDual Avrs nodes:
-
-::
-
-    parameter_defaults:
-      OvercloudControllerFlavor: control
-      ControllerCount: 1
-      OvercloudComputeFlavor: compute
-      ComputeCount: 2
-      OvercloudComputeAvrsSingleFlavor: computeavrssingle
-      ComputeAvrsSingleCount: 2
-      OvercloudComputeAvrsSingleFlavor: computeavrsdual
-      ComputeAvrsDualCount: 2
-
-
-:Step 5: Modify avrs environment file in /home/stack/nuage-tripleo-heat-templates/environments/.
-
-
-    **For single-role AVRS deployment,** the environment file can found at:  `compute-avrs-environment.yaml <../../nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml>`_ file. See the sample in the `Sample Templates`_ section.
-
-    **For multi-role AVRS deployment,** the environment file can be found at : `compute-avrs-mutlirole-environment.yaml <../../nuage-tripleo-heat-templates/environments/compute-avrs-mutlirole-environment.yaml>`_ file. See the sample in the `Sample Templates`_ section.
+:Step 3: Modify avrs environment file in /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml.
 
     **Please notice these are sample templates and parameter values can be customized depending on the use case. Please contact Nuage for the recommended values for these parameters**.
 
@@ -560,19 +439,90 @@ This example shows how to create a deployment with one Controller node and two C
 
 
 
-5. To enable VRS Offload (OVRS) with Mellanox CX-5, perform the following instructions:
+Multi Role AVRS (ComputeAvrsSingle and ComputeAvrsDual)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+For ComputeAvrs Integration, perform the following instructions:
 
-
-:Step 1: Create a new compute-ovrs-role.yaml file to deploy Offload VRS Compute nodes. The command used to create this file is:
+:Step 1: Create a flavor and profile:
 
 ::
 
-    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/templates/compute-ovrs-role.yaml Controller ComputeOvrs
+    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeavrssingle
+    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrssingle" computeavrssingle
+
+    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeavrsdual
+    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrsdual" computeavrsdual
 
 
-Create a flavor and profile for computeovrs:
+:Step 2: Set profile to AVRS nodes:
 
-      Please refer: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/chap-configuring_basic_overcloud_requirements_with_the_cli_tools#sect-Tagging_Nodes_into_Profiles for more information.
+::
+
+    openstack baremetal node set --property capabilities='profile:computeavrssingle,boot_option:local' <node-uuid>
+    openstack baremetal node set --property capabilities='profile:computeavrsdual,boot_option:local' <node-uuid>
+
+
+
+:Step 3: Modify avrs environment file in /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-mutlirole-environment.yaml.
+
+    **Please notice these are sample templates and parameter values can be customized depending on the use case. Please contact Nuage for the recommended values for these parameters**.
+
+    a. For AVRS deployment, Virtual Accelerator requires information including which logical cores run the fast path, list of ports enabled in the fast path, additional fast path options and so on to be set inside `/etc/fast-path.env`.
+       Below is the mapping between parameters in heat template to parameters in `fast-path.env`.
+
+    ::
+
+        FastPathMask           =====>    FP_MASK
+        FastPathNics           =====>    FP_PORTS
+        CorePortMapping        =====>    CORE_PORT_MAPPING
+        FastPathMemory         =====>    FP_MEMORY
+        VmMemory               =====>    VM_MEMORY
+        NbMbuf                 =====>    NB_MBUF
+        FastPathOffload        =====>    FP_OFFLOAD
+        FastPathNicDescriptors =====>    FPNSDK_OPTIONS
+        FastPathDPVI           =====>    DPVI_MASK
+        FastPathOptions        =====>    FP_OPTIONS
+
+
+    b. For AVRS deployment, Virtual Accelerator requires to configure monkey_patch parameters in `nova.conf` and we use below to configure them.
+
+    ::
+
+        ComputeAvrsExtraConfig:
+            nova::config::nova_config:
+              DEFAULT/monkey_patch:
+                value: true
+              DEFAULT/monkey_patch_modules:
+                value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
+
+    c. For AVRS deployment, Virtual Accelerator requires hugepages to be configured and the value can be varied. You also need to enable VT-d.
+
+    ::
+
+        KernelArgs: "default_hugepagesz=1G hugepagesz=1G hugepages=64 iommu=pt intel_iommu=on isolcpus=1-7"
+
+    .. Note:: Above kernel arguments are consumed by the another env file which include in deployment command `/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`
+
+    .. Note:: You also can set GpgCheck to "no" in environment files if user want to disable GPG Check while installating packages on AVRS Node deployment.
+
+    d. For IsolatedCPU or CPUAffinity to be respected, CPUSET_ENABLE needs to be set to the value 0. We already set CPUSET_ENABLE value to 0 in our templates by default so you don't need to set is explicitly.
+
+    ::
+
+        CpuSetEnable        =====>    CPUSET_ENABLE
+
+
+
+
+OVRS
+++++
+
+To enable VRS Offload (OVRS) with Mellanox CX-5, perform the following instructions:
+
+
+:Step 1: Create a flavor and profile for computeovrs:
+
+Please refer: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/chap-configuring_basic_overcloud_requirements_with_the_cli_tools#sect-Tagging_Nodes_into_Profiles for more information.
 
 ::
 
@@ -580,61 +530,43 @@ Create a flavor and profile for computeovrs:
     openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeovrs" computeovrs
 
 
-
-:Step 2: Assign Controller and Offload VRS Compute nodes with the appropriate profiles:
+:Step 2: Assign Offload VRS Compute nodes with the appropriate profiles:
 
 ::
 
-    openstack baremetal node set --property capabilities='profile:control,boot_option:local' <node-uuid>
     openstack baremetal node set --property capabilities='profile:computeovrs,boot_option:local' <node-uuid>
 
 
-:Step 3: Add the count and flavor for ComputeOvrs Role in the ``node-info.yaml`` file. The following example shows how to create a deployment with one Controller node and two Offload VRS Compute nodes:
-
-::
-
-    parameter_defaults:
-      OvercloudControllerFlavor: control
-      ControllerCount: 1
-      OvercloudComputeOvrsFlavor: computeovrs
-      ComputeOvrsCount: 2
-
-
-:Step 4: As part of overcloud deployment, Mellanox firstboot template ``/home/stack/nuage-tripleo-heat-templates/firstboot/mellanox_fw_update.yaml`` will be updating firmware on CX5 interface. Create FW folder that will contain all the Mellanox Firmware bin files on a machine that has httpd server running. (User can use the undercloud itself)
+:Step 3:  As part of overcloud deployment, Mellanox firstboot template ``/home/stack/nuage-tripleo-heat-templates/firstboot/mellanox_fw_update.yaml`` will be updating firmware on CX5 interface. Create FW folder that will contain all the Mellanox Firmware bin files on a machine that has httpd server running. (User can use the undercloud itself)
 
 ::
 
     $ mkdir -p /var/www/html/FW_<VERSION>
 
 
-:Step 5: Download and place all the Mellanox Firmware bins to the folder created above and set ``BIN_DIR_URL`` in ``/home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml`` to the above URL. Sample is provided in `Sample Templates`_ section.
+:Step 4: Download and place all the Mellanox Firmware bins to the folder created above and set ``BIN_DIR_URL`` in ``/home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml`` to the above URL. Sample is provided in `Sample Templates`_ section.
 
 
-:Step 6: For "Deploy Overcloud", we need to pass ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`` as environment file to configure kernel arguments in `/etc/default/grub` and reboot the computeovrs nodes.
+:Step 5: For "Deploy Overcloud", we need to pass ``/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`` as environment file to configure kernel arguments in `/etc/default/grub` and reboot the computeovrs nodes.
 
 
 
+SR-IOV
+++++++
 
-6. **(Optional)** To enable SR-IOV, perform the following instructions:
+To enable SR-IOV, perform the following instructions:
 
-  This feature allows an OpenStack installation to support Single Root I/O Virtualization (SR-IOV)-attached VMs (https://wiki.openstack.org/wiki/SR-IOV-Passthrough-For-Networking) with VSP-managed VMs on the same KVM hypervisor cluster. It provides a Nuage ML2 mechanism driver that coexists with the sriovnicswitch mechanism driver.
+This feature allows an OpenStack installation to support Single Root I/O Virtualization (SR-IOV)-attached VMs (https://wiki.openstack.org/wiki/SR-IOV-Passthrough-For-Networking) with VSP-managed VMs on the same KVM hypervisor cluster. It provides a Nuage ML2 mechanism driver that coexists with the sriovnicswitch mechanism driver.
 
-  Neutron ports attached through SR-IOV are configured by the sriovnicswitch mechanism driver. Neutron ports attached to Nuage VSD-managed networks are configured by the Nuage ML2 mechanism driver.
+Neutron ports attached through SR-IOV are configured by the sriovnicswitch mechanism driver. Neutron ports attached to Nuage VSD-managed networks are configured by the Nuage ML2 mechanism driver.
 
-  To enable SR-IOV, perform the following steps:
+To enable SR-IOV, perform the following steps:
 
 :Step 1: When updating the Undercloud codebase, no additional changes are required.
 
 :Step 2: When modifying the overcloud-full image", use the script provided to update the image. No additional changes are required.
 
-:Step 3: Create a new compute-sriov-role.yaml file to deploy SR-IOV Compute nodes. The command used to create this file is:
-
-::
-
-    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles/ -o /home/stack/nuage-tripleo-heat-templates/templates/compute-sriov-role.yaml Controller Compute ComputeSriov
-
-
-:Step 4: If deploying OpenStack Neutron SR-IOV in your overcloud, include ``/home/stack/nuage-tripleo-heat-templates/templates/compute-sriov-role.yaml`` and ``/usr/share/openstack-tripleo-heat-templates/environments/services-docker/neutron-sriov.yaml`` environment file so the director can prepare the images. When following **Phase 8 Step 4** please include below environment. The following snippet is an example on how to include this environment file:
+:Step 3: If deploying OpenStack Neutron SR-IOV in your overcloud, include ``/home/stack/nuage-tripleo-heat-templates/templates/compute-sriov-role.yaml`` and ``/usr/share/openstack-tripleo-heat-templates/environments/services-docker/neutron-sriov.yaml`` environment file so the director can prepare the images. When following **Phase 8 Step 4** please include below environment. The following snippet is an example on how to include this environment file:
 
 ::
 
@@ -645,7 +577,7 @@ Create a flavor and profile for computeovrs:
     ...
 
 
-:Step 5: Create a flavor and profile for computesriov:
+:Step 4: Create a flavor and profile for computesriov:
 
       Please refer: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/chap-configuring_basic_overcloud_requirements_with_the_cli_tools#sect-Tagging_Nodes_into_Profiles for more information.
 
@@ -656,27 +588,14 @@ Create a flavor and profile for computeovrs:
 
 
 
-:Step 6: Assign SR-IOV nodes with the appropriate computesriov profile:
+:Step 5: Assign SR-IOV nodes with the appropriate computesriov profile:
 
 ::
 
     openstack baremetal node set --property capabilities='profile:computesriov,boot_option:local' <node-uuid>
 
 
-:Step 7: Add the count and flavor for ComputeSriov Role in the node-info.yaml file. The following example shows how to create a deployment with one Controller node, two Compute nodes, and two ComputeSriov nodes:
-
-::
-
-    parameter_defaults:
-      OvercloudControllerFlavor: control
-      ControllerCount: 1
-      OvercloudComputeFlavor: compute
-      ComputeCount: 2
-      OvercloudComputeSriovFlavor: computesriov
-      ComputeSriovCount: 2
-
-
-:Step 8: To deploy the Overcloud, additional parameters and template files are required.
+:Step 6: To deploy the Overcloud, additional parameters and template files are required.
 
     * Include the following parameter values in the heat template neutron-nuage-config.yaml:
 
@@ -701,7 +620,10 @@ Create a flavor and profile for computeovrs:
     * Include "neutron-sriov.yaml" file in the Overcloud deployment command. See the sample in the `Sample Templates`_ section.
 
 
-7. Network Isolation on Overcloud nodes
+Network Isolation
++++++++++++++++++
+
+Network Isolation on Overcloud nodes
 
 ** Linux Bonding with VLAN **
 
@@ -950,7 +872,68 @@ Phase 8. Nuage Docker Containers
     openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml - e <remaining environment files>
 
 
-Phase 9: Deploy the Overcloud
+Phase 9: Create nuage_roles_data and node-info files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As part of Nuage Integration, Nuage provides some additional roles mention below:
+
+1. ComputeAvrs
+2. ComputeAvrsSingle and ComputeAvrsDual
+3. ComputeOvrs
+
+Here is the mapping for the Nuage OpenVswitch package and Role Names
+
+::
+
+    Nuage OVS           Role Name
+    VRS                 Compute
+    AVRS                ComputeAvrs/ComputeAvrsSingle/ComputeAvrsDual
+    OVRS                ComputeOvrs
+
+For SR-IOV deployments, please use role name ComputeSriov.
+
+
+:Step 1: Create a nuage_roles_data.yaml file with all the required roles for the current overcloud deployment.
+
+::
+
+    Syntax:
+    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml Controller Compute <role> <role> ...
+
+    For example, in order to create nuage_roles_data.yaml to have Controller and VRS + AVRS + OVRS + SR-IOV Computes, sample command is below with the respective role names mentioned in the same order
+    openstack overcloud roles generate --roles-path /home/stack/nuage-tripleo-heat-templates/roles -o /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml Controller Compute ComputeAvrs ComputeOvrs ComputeSriov
+
+.. Note:: It is not mandatory to create nuage_roles_data.yaml with all the roles mentioned in above command. The above shown is a sample command and users can always mention only the required roles.
+
+
+:Step 2: Create ``node-info.yaml`` for the roles that are present inside nuage_roles_data.yaml.
+
+::
+
+    Syntax:
+    parameter_defaults:
+      Overcloud<Role Name>Flavor: <flavor name>
+      <Role Name>Count: <number of nodes for this role>
+
+
+    For example, belows shows how to create a node-info.yaml for deployment with 3 Controller, 2 Compute, 2 ComputeAvrs, 2 ComputeOvrs and 2 ComputeSriov roles:
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 3
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
+      OvercloudComputeAvrsFlavor: computeavrs
+      ComputeAvrsCount: 2
+      OvercloudComputeOvrsFlavor: computeovrs
+      ComputeOvrsCount: 2
+      OvercloudComputeSriovFlavor: computesriov
+      ComputeSriovCount: 2
+
+.. Note:: It is not mandatory to provide node info for all the roles as mentioned above. The above shown is a sample template and users can always mention node info only for the required roles.
+
+
+
+Phase 10: Deploy the Overcloud
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can use the Heat templates with the command-line based template to deploy the Overcloud.
@@ -985,10 +968,10 @@ For AVRS, also include the following role and environment files.
     openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server --timeout timeout
 
     For an AVRS single-role deployment, use:
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
     For an AVRS multi-role deployment, use:
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
 2. For an HA deployment, use one of the following commands:
 
@@ -1001,10 +984,10 @@ For AVRS, also include the following role and environment files.
     openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server --timeout timeout
 
     For an AVRS single-role deployment, use:
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
     For an AVRS multi-role deployment, use:
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
 
 3. For VRS Offload to Mellanox CX-5 with Nuage, use:
@@ -1012,16 +995,16 @@ For AVRS, also include the following role and environment files.
 ::
 
     For Single NIC CX-5 Hardware Offload:
-    openstack overcloud deploy --templates -r /home/stack/templates/compute-ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-single-nic-hw-offload.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-single-nic-hw-offload.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
     For VF lag with VLANs for CX-5 NICs
-    openstack overcloud deploy --templates -r /home/stack/templates/compute-ovrs-role.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/mellanox-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/ovs-hw-offload.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server
 
 4. For SR-IOV, use following commands:
 
 ::
 
-   openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-sriov-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/neutron-sriov.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server --timeout timeout
+   openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/neutron-sriov.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server --timeout timeout
 
 
 5. For a Linux-bonding HA deployment with Nuage, use the following:
@@ -1031,16 +1014,16 @@ For AVRS, also include the following role and environment files.
     openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server --timeout timeout
 
     For an AVRS single-role deployment, use:
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
     For an AVRS multi-role deployment, use:
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/network-isolation.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/network-environment.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
 6. For VRS + SRIOV + AVRS deployment with Nuage, use the following:
 
 ::
 
-     openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/neutron-sriov.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
+     openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/nuage_roles_data.yaml -e /home/stack/templates/neutron-sriov.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/net-bond-with-vlans.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml --ntp-server ntp-server --timeout timeout
 
 
 where:
