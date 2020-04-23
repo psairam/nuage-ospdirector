@@ -1,5 +1,5 @@
-# !/usr/bin/python
-# Copyright 2019 NOKIA
+# !/usr/bin/python3
+# Copyright 2020 NOKIA
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import subprocess
 import sys
 import logging
 import os
-import constants
+from . import constants
 
 
 logger = logging.getLogger(constants.LOG_FILE_NAME)
@@ -26,7 +26,8 @@ logger = logging.getLogger(constants.LOG_FILE_NAME)
 #####
 # Function to run commands on the console
 #####
-# quotes
+
+
 def cmds_run(cmds):
     if not cmds:
         return
@@ -44,7 +45,7 @@ def cmds_run(cmds):
                 "error occurred during command:\n %s\n error:\n %s \n "
                 "exiting" % (cmd, err))
             sys.exit(1)
-        output_list.append(out)
+        output_list.append(out.decode())
 
     if len(cmds) == 1:
         if output_list[0]:
@@ -94,21 +95,21 @@ def file_exists(filename):
 
 
 def start_script():
-    if os.path.isfile(constants.SCRIPT_NAME):
-        os.remove(constants.SCRIPT_NAME)
-
     cmds = '''#!/bin/bash
 set -xe
 '''
-    write_to_file(constants.SCRIPT_NAME, cmds)
+    constants.PATCHING_SCRIPT += cmds
 
 
 #####
 # Function that writes commands to a file
 #####
 
-def write_to_file(filename, contents):
-    with open(filename, 'a') as script:
+def write_to_file(contents):
+    if os.path.isfile(constants.SCRIPT_NAME):
+        os.remove(constants.SCRIPT_NAME)
+
+    with open(constants.SCRIPT_NAME, 'a') as script:
         script.writelines(contents)
 
 #####
@@ -120,7 +121,7 @@ def importing_gpgkeys(image, gpgkeys):
     cmd = '''
 #### Importing GPG keys
 '''
-    write_to_file(constants.SCRIPT_NAME, cmd)
+    constants.PATCHING_SCRIPT += cmd
     for gpgkey in gpgkeys:
         file_exist = os.path.isfile(gpgkey)
         file_name = os.path.basename(gpgkey)
@@ -130,7 +131,7 @@ def importing_gpgkeys(image, gpgkeys):
             rpm_import = '''
 rpm --import %s%s
 ''' % (constants.TEMPORARY_PATH, file_name)
-            write_to_file(constants.SCRIPT_NAME, rpm_import)
+            constants.PATCHING_SCRIPT += rpm_import
 
         else:
             logger.error("Nuage package signing key is not present "
@@ -193,16 +194,15 @@ def rhel_subscription(username, password, pool, satellite_url, satellite_org,
     else:
         subscription_command += (
             "subscription-manager register"
-            " --username='%s' --password='%s'\n" % (username, password)
+            " --username='%s' --password='%s' --force \n" % (username, password)
         )
         subscription_command += (
             "subscription-manager attach --pool='%s'\n" % pool
         )
     subscription_command += (
-        "subscription-manager repos --enable=rhel-7-server-optional-rpms\n"
-        "subscription-manager repos --enable=rhel-7-server-rpms\n"
+        "sudo subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms --enable=rhel-8-for-x86_64-appstream-rpms  \n"
     )
-    write_to_file(constants.SCRIPT_NAME, subscription_command)
+    constants.PATCHING_SCRIPT += subscription_command
 
 
 #####
@@ -221,7 +221,7 @@ subscription-manager unregister
             "| grep katello-ca-consumer"
             "| xargs sudo rpm -e"
         )
-    write_to_file(constants.SCRIPT_NAME, cmd)
+    constants.PATCHING_SCRIPT += cmd
 
 #####
 # Function to install packages nuage python ovs
@@ -234,7 +234,7 @@ def install_nuage_python_ovs_packages():
 yum install --setopt=skip_missing_names_on_install=False -y %s
 yum clean all
 ''' % constants.NUAGE_PYTHON_OVS
-    write_to_file(constants.SCRIPT_NAME, cmd)
+    constants.PATCHING_SCRIPT += cmd
 
 #####
 # Function to remove packages that are not needed
@@ -246,7 +246,7 @@ def uninstall_packages():
 #### Removing Upstream OpenvSwitch
 ovs_package_name=$(rpm -qa | awk -F- \
 '/^(openvswitch[0-9]+\.[0-9]+-|openvswitch-2)/{print $1}')
-yum remove -y $ovs_package_name
+yum remove -y $ovs_package_name network-scripts-$ovs_package_name --noautoremove
 yum clean all
 '''
-    write_to_file(constants.SCRIPT_NAME, cmd)
+    constants.PATCHING_SCRIPT += cmd

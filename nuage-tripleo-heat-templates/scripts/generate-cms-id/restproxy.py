@@ -2,12 +2,16 @@
 # All Rights Reserved.
 
 import base64
-import httplib
 import json
 import socket
 import time
 import logging
 import ssl
+
+try:
+    import http.client as http_client
+except ImportError:
+    import httplib as http_client
 
 LOG = logging.getLogger(__name__)
 MAX_RETRIES = 5
@@ -28,7 +32,7 @@ class RESTProxyBaseException(Exception):
                 super(RESTProxyBaseException, self).__init__(self.message)
 
     def __unicode__(self):
-        return unicode(self.msg)
+        return str(self.msg)
 
     def use_fatal_exceptions(self):
         return False
@@ -70,7 +74,7 @@ class RESTProxyServer(object):
         self.retry = 0
         self.retry_503 = 0
         self.auth = None
-        self.success_codes = range(200, 207)
+        self.success_codes = list(range(200, 207))
 
     def _rest_call(self, action, resource, data, extra_headers=None):
         if self.retry >= MAX_RETRIES:
@@ -94,14 +98,14 @@ class RESTProxyServer(object):
         LOG.debug('Request body: %s', body)
 
         if self.serverssl:
-            conn = httplib.HTTPSConnection(
+            conn = http_client.HTTPSConnection(
                 self.server, self.port, timeout=self.timeout, context=ssl._create_unverified_context())
             if conn is None:
                 LOG.error('RESTProxy: Could not establish HTTPS '
                           'connection')
                 return 0, None, None, None
         else:
-            conn = httplib.HTTPConnection(
+            conn = http_client.HTTPConnection(
                 self.server, self.port, timeout=self.timeout)
             if conn is None:
                 LOG.error('RESTProxy: Could not establish HTTP '
@@ -145,8 +149,8 @@ class RESTProxyServer(object):
 
     def generate_nuage_auth(self):
         data = ''
-        encoded_auth = base64.encodestring(self.serverauth).strip()
-        self.auth = 'Basic ' + encoded_auth
+        encoded_auth = base64.encodestring(self.serverauth.encode()).strip()
+        self.auth = 'Basic ' + encoded_auth.decode()
         resp = self._rest_call('GET', self.auth_resource, data)
         if resp[0] in self.success_codes and resp[3][0]['APIKey']:
             respkey = resp[3][0]['APIKey']
@@ -157,7 +161,7 @@ class RESTProxyServer(object):
                 assert 0, 'Could not authenticate to REST server. Abort'
         uname = self.serverauth.split(':')[0]
         new_uname_pass = uname + ':' + respkey
-        auth = 'Basic ' + base64.encodestring(new_uname_pass).strip()
+        auth = 'Basic ' + base64.encodestring(new_uname_pass.encode()).strip().decode()
         self.auth = auth
 
     def rest_call(self, action, resource, data, extra_headers=None):

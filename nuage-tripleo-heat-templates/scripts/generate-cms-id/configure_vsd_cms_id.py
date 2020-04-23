@@ -23,14 +23,14 @@ def get_mac():
 
 DEFAULT_CMS_NAME = 'OpenStack_' + get_mac()
 
-from restproxy import RESTProxyServer
+from .restproxy import RESTProxyServer
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
-REST_SUCCESS_CODES = range(200, 207)
+REST_SUCCESS_CODES = list(range(200, 207))
 
 
 def init_arg_parser():
